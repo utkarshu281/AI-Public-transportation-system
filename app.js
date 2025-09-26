@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+//import React, { useState, useEffect, useCallback, useMemo } from 'react';
 
 // --- Global Constants (Simulating external data and structure) ---
 
@@ -620,4 +620,107 @@ const LoginScreenUI = ({ username, setUsername, passkey, setPasskey, handleLogin
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm transition duration-150"
                 />
 
-                {error && <p className="text-red-500 text-center text-sm font-medium bg-red-50 p
+                {error && <p className="text-red-500 text-center text-sm font-medium bg-red-50 p-2">{error}</p>}
+            </div>
+        </div>
+    );
+};
+// ...existing code...
+
+// ...existing code...
+
+// ...existing code...
+
+const App = () => {
+    const [appState, setAppState] = React.useState('LOGIN');
+    const [username, setUsername] = React.useState('');
+    const [passkey, setPasskey] = React.useState('');
+    const [error, setError] = React.useState(null);
+    const [journeyData, setJourneyData] = React.useState(null);
+    const [isBusBoarded, setIsBusBoarded] = React.useState(false);
+
+    const handleLogin = () => {
+        if (username === 'user' && passkey === '1') {
+            setAppState('USER_PANEL');
+        } else if (username === 'admin' && passkey === '2') {
+            setAppState('DRIVER_PANEL');
+        } else {
+            setError('Invalid credentials. Try again.');
+        }
+    };
+
+    // User Panel: Route Planner → Live Tracking → Journey Screen
+    if (appState === 'USER_PANEL') {
+        if (!journeyData) {
+            return (
+                <RoutePlanner
+                    setAppState={() => setAppState('USER_PANEL')}
+                    setJourneyData={setJourneyData}
+                />
+            );
+        } else if (!isBusBoarded) {
+            return (
+                <LiveTracker
+                    journeyData={journeyData}
+                    setJourneyData={setJourneyData}
+                    setAppState={setAppState}
+                >
+                    <button
+                        className="mt-4 p-2 bg-green-600 text-white rounded"
+                        onClick={() => setIsBusBoarded(true)}
+                    >
+                        Board Bus
+                    </button>
+                </LiveTracker>
+            );
+        } else {
+            return (
+                <JourneyScreen
+                    journeyData={journeyData}
+                    setAppState={setAppState}
+                />
+            );
+        }
+    }
+
+    // Driver Panel
+    if (appState === 'DRIVER_PANEL') {
+        return <DriverPanel setAppState={setAppState} />;
+    }
+
+    // Admin Panel (add your logic if needed)
+    if (appState === 'ADMIN_PANEL') {
+        return <AdminPanel setAppState={setAppState} />;
+    }
+
+    // Login Screen
+    return (
+        <LoginScreenUI
+            username={username}
+            setUsername={setUsername}
+            passkey={passkey}
+            setPasskey={setPasskey}
+            handleLogin={handleLogin}
+            error={error}
+            setAppState={setAppState}
+        />
+    );
+};
+
+// Add a simple JourneyScreen component
+const JourneyScreen = ({ journeyData, setAppState }) => (
+    <div className="p-4">
+        <h2 className="text-xl font-bold mb-2">Journey Screen</h2>
+        <p>Next Stop: {journeyData.endStop}</p>
+        <p>Remaining Time: {journeyData.total_journey_min} min</p>
+        <button
+            className="mt-4 p-2 bg-blue-600 text-white rounded"
+            onClick={() => setAppState('USER_PANEL')}
+        >
+            Back to Home
+        </button>
+    </div>
+);
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
