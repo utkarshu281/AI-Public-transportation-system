@@ -1,13 +1,14 @@
-from flask import Flask, jsonify, render_template, request
-from jinja2 import TemplateNotFound
 import os
-import joblib
 import random
 import numpy as np
+import joblib
+from flask import Flask, jsonify, request
+from jinja2 import TemplateNotFound
 
 # Local imports (Requires datasim.py and ai_models.py in the same folder)
 import datasim
 import ai_models
+
 
 # --- AI Model Loading ---
 try:
@@ -23,7 +24,6 @@ except FileNotFoundError:
 
 def mock_predict_eta(speed, distance):
     """Uses the loaded model or falls back to basic calculation."""
-    # Calls the prediction function from the ai_models module
     return ai_models.predict_eta(eta_model, speed, distance)
 
 def calculate_journey_time(speed, dist_to_start_km, start_name, end_name, route_id):
@@ -42,17 +42,18 @@ def calculate_journey_time(speed, dist_to_start_km, start_name, end_name, route_
 
 
 def create_app() -> Flask:
-    # Explicitly defines where to find the 'templates' folder
-    template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-    app = Flask(__name__, template_folder=template_dir) 
+    # We explicitly do NOT use a template folder, serving index.html from root.
+    app = Flask(__name__) 
 
     @app.route('/')
     def index():
         try:
-            # Renders the React wrapper file (templates/index.html)
-            return render_template('index.html') 
-        except TemplateNotFound:
-            return "ERROR: index.html template not found. Please ensure files are in the 'templates' folder.", 500
+            # Read and serve the index.html file directly from the root, bypassing Jinja2.
+            with open('index.html', 'r') as f:
+                content = f.read()
+            return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
+        except FileNotFoundError:
+            return "ERROR: index.html not found. Please ensure the file is in the root directory.", 500
 
     @app.route('/api/v1/plan', methods=['GET'])
     def get_route_plan():
@@ -67,7 +68,7 @@ def create_app() -> Flask:
         all_routes = datasim.get_routes_metadata()
         
         try:
-            live_data = datasim.generate_live_bus_status(num_buses=15) # Use 15 buses
+            live_data = datasim.generate_live_bus_status(num_buses=15)
         except Exception as e:
             print(f"Error generating live data: {e}")
             return jsonify({'error': 'Failed to generate live bus data.'}), 500
@@ -100,7 +101,6 @@ def create_app() -> Flask:
 
         results.sort(key=lambda x: float(x['total_journey_min']))
         
-        # If no buses are running on this route, return an empty list, not a server error.
         return jsonify({
             'start': start, 'end': end, 'suggestions': results
         }), 200
@@ -110,7 +110,6 @@ def create_app() -> Flask:
         """Provides raw, real-time fleet status."""
         live_data = datasim.generate_live_bus_status(num_buses=15)
         
-        # Format list to be easily consumed by React
         status_list = []
         for bus_id, item in live_data.items():
             status_list.append({
