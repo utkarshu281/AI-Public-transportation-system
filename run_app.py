@@ -54,7 +54,16 @@ def create_app() -> Flask:
             return content, 200, {'Content-Type': 'text/html; charset=utf-8'}
         except FileNotFoundError:
             return "ERROR: index.html not found. Please ensure the file is in the root directory.", 500
-
+        
+        # --- Serve static files like app.js and style.css ---
+    @app.route('/<path:filename>')
+    def serve_static(filename):
+        allowed = {'app.js', 'style.css'}
+        if filename in allowed:
+            from flask import send_from_directory
+            return send_from_directory('.', filename)
+        return "File not found", 404
+    
     @app.route('/api/v1/plan', methods=['GET'])
     def get_route_plan():
         """Handles Start + Destination Input and Route Suggestions."""
