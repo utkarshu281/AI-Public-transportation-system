@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathFinder Driver - Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo i {
+            font-size: 28px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .driver-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #27ae60;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.offline {
+            background-color: #e74c3c;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #219a52;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e1e8ed;
+        }
+
+        .card h3 {
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card i {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card.speed i { color: #3498db; }
+        .stat-card.distance i { color: #27ae60; }
+        .stat-card.passengers i { color: #f39c12; }
+        .stat-card.time i { color: #9b59b6; }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #f39c12;
+        }
+
+        .trip-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .trip-controls button {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px;
+            font-size: 16px;
+        }
+
+        .location-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .location-info h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .location-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e1e8ed;
+        }
+
+        .location-item:last-child {
+            border-bottom: none;
+        }
+
+        .location-item strong {
+            color: #333;
+        }
+
+        .map-container {
+            height: 300px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .sos-panel {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .sos-panel h3 {
+            margin-bottom: 15px;
+        }
+
+        .sos-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .notification {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .notification.error {
+            background: #e74c3c;
+        }
+
+        .notification.warning {
+            background: #f39c12;
+        }
+
+        .passenger-load-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .load-option {
+            padding: 15px;
+            border: 2px solid #e1e8ed;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .load-option:hover {
+            border-color: #f39c12;
+        }
+
+        .load-option.selected {
+            border-color: #f39c12;
+            background-color: rgba(243, 156, 18, 0.1);
+        }
+
+        .load-option i {
+            font-size: 24px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .load-option.empty i { color: #27ae60; }
+        .load-option.medium i { color: #f39c12; }
+        .load-option.full i { color: #e74c3c; }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .trip-controls {
+                flex-direction: column;
+            }
+
+            .trip-controls button {
+                width: 100%;
+            }
+
+            .sos-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-steering-wheel"></i>
+                <h1>PathFinder Driver</h1>
+            </div>
+            <div class="user-info">
+                <div class="driver-status">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Online</span>
+                </div>
+                <span id="driverName">Driver</span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Notification -->
+        <div class="notification" id="notification"></div>
+
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card speed">
+                <i class="fas fa-tachometer-alt"></i>
+                <div class="stat-value" id="currentSpeed">0</div>
+                <div class="stat-label">Current Speed (km/h)</div>
+            </div>
+            <div class="stat-card distance">
+                <i class="fas fa-route"></i>
+                <div class="stat-value" id="totalDistance">0.0</div>
+                <div class="stat-label">Total Distance (km)</div>
+            </div>
+            <div class="stat-card passengers">
+                <i class="fas fa-users"></i>
+                <div class="stat-value" id="passengerCount">0</div>
+                <div class="stat-label">Passengers Today</div>
+            </div>
+            <div class="stat-card time">
+                <i class="fas fa-clock"></i>
+                <div class="stat-value" id="tripTime">00:00</div>
+                <div class="stat-label">Trip Duration</div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Trip Management -->
+            <div class="card">
+                <h3><i class="fas fa-route"></i> Trip Management</h3>
+                
+                <div class="form-group">
+                    <label for="busId">Bus ID</label>
+                    <input type="text" id="busId" placeholder="Enter Bus ID (e.g., BUS001)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="routeNumber">Route Number</label>
+                    <input type="text" id="routeNumber" placeholder="Enter Route Number (e.g., Route 42)">
+                </div>
+                
+                <div class="form-group">
+                    <label for="startLocation">Start Location</label>
+                    <input type="text" id="startLocation" placeholder="Enter starting location">
+                </div>
+
+                <div class="trip-controls">
+                    <button class="btn btn-success" onclick="startTrip()" id="startTripBtn">
+                        <i class="fas fa-play"></i>
+                        Start Trip
+                    </button>
+                    <button class="btn btn-danger" onclick="endTrip()" id="endTripBtn" disabled>
+                        <i class="fas fa-stop"></i>
+                        End Trip
+                    </button>
+                </div>
+            </div>
+
+            <!-- Location Status -->
+            <div class="card">
+                <h3><i class="fas fa-map-marker-alt"></i> Location Status</h3>
+                
+                <div class="location-info">
+                    <h4>Current Position</h4>
+                    <div class="location-item">
+                        <span>Latitude:</span>
+                        <strong id="currentLat">--</strong>
+                    </div>
+                    <div class="location-item">
+                        <span>Longitude:</span>
+                        <strong id="currentLng">--</strong>
+                    </div>
+                    <div class="location-item">
+                        <span>Direction:</span>
+                        <strong id="currentDirection">--</strong>
+                    </div>
+                    <div class="location-item">
+                        <span>Last Update:</span>
+                        <strong id="lastUpdate">--</strong>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="toggleTracking()" id="trackingBtn">
+                    <i class="fas fa-satellite-dish"></i>
+                    Start GPS Tracking
+                </button>
+            </div>
+        </div>
+
+        <!-- Passenger Load Management -->
+        <div class="card">
+            <h3><i class="fas fa-users"></i> Passenger Load Management</h3>
+            
+            <div class="passenger-load-selector">
+                <div class="load-option empty selected" data-load="empty" onclick="selectPassengerLoad('empty')">
+                    <i class="fas fa-bus"></i>
+                    <div>Empty</div>
+                </div>
+                <div class="load-option medium" data-load="medium" onclick="selectPassengerLoad('medium')">
+                    <i class="fas fa-bus"></i>
+                    <div>Medium</div>
+                </div>
+                <div class="load-option full" data-load="full" onclick="selectPassengerLoad('full')">
+                    <i class="fas fa-bus"></i>
+                    <div>Full</div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="updatePassengerLoad()">
+                <i class="fas fa-upload"></i>
+                Update Passenger Load
+            </button>
+        </div>
+
+        <!-- Emergency SOS Panel -->
+        <div class="sos-panel">
+            <h3><i class="fas fa-exclamation-triangle"></i> Emergency SOS</h3>
+            <p>In case of emergency, click appropriate button below</p>
+            
+            <div class="sos-buttons">
+                <button class="btn btn-danger" onclick="sendSOS('accident')">
+                    <i class="fas fa-car-crash"></i>
+                    Accident
+                </button>
+                <button class="btn btn-warning" onclick="sendSOS('breakdown')">
+                    <i class="fas fa-tools"></i>
+                    Breakdown
+                </button>
+                <button class="btn btn-danger" onclick="sendSOS('emergency')">
+                    <i class="fas fa-ambulance"></i>
+                    Medical Emergency
+                </button>
+            </div>
+        </div>
+
+        <!-- Live Map -->
+        <div class="card">
+            <h3><i class="fas fa-map"></i> Live Location Map</h3>
+            <div class="map-container">
+                <div id="driverMap" style="height: 100%; width: 100%;"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        
+        // State variables
+        let isTracking = false;
+        let tripActive = false;
+        let currentPassengerLoad = 'empty';
+        let watchId = null;
+        let map = null;
+        let busMarker = null;
+        let tripStartTime = null;
+        let tripInterval = null;
+        let locationUpdateInterval = null;
+        let totalDistance = 0;
+        let lastPosition = null;
+
+        // DOM elements
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const driverName = document.getElementById('driverName');
+        const notification = document.getElementById('notification');
+        const startTripBtn = document.getElementById('startTripBtn');
+        const endTripBtn = document.getElementById('endTripBtn');
+        const trackingBtn = document.getElementById('trackingBtn');
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check authentication
+            if (!checkAuthentication()) {
+                return;
+            }
+
+            // Initialize map
+            initializeMap();
+            
+            // Set driver name
+            const username = localStorage.getItem('username');
+            if (driverName) {
+                driverName.textContent = username;
+            }
+            
+            console.log('Driver app initialized');
+        });
+
+        // Authentication check
+        function checkAuthentication() {
+            const token = localStorage.getItem('access_token');
+            const role = localStorage.getItem('user_role');
+            
+            if (!token || role !== 'driver') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Initialize map
+        function initializeMap() {
+            // Default location (can be changed based on actual location)
+            const defaultLat = 26.9124;  // Jaipur coordinates
+            const defaultLng = 75.7873;
+            
+            map = L.map('driverMap').setView([defaultLat, defaultLng], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Add bus marker
+            busMarker = L.marker([defaultLat, defaultLng], {
+                icon: L.divIcon({
+                    className: 'bus-marker',
+                    html: '<i class="fas fa-bus" style="color: #f39c12; font-size: 24px;"></i>',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                })
+            }).addTo(map);
+        }
+
+        // Start trip
+        async function startTrip() {
+            const busId = document.getElementById('busId').value.trim();
+            const routeNumber = document.getElementById('routeNumber').value.trim();
+            const startLocation = document.getElementById('startLocation').value.trim();
+            
+            if (!busId || !routeNumber || !startLocation) {
+                showNotification('Please fill all trip details', 'error');
+                return;
+            }
+            
+            try {
+                const response = await makeAuthenticatedRequest(`${API_BASE_URL}/driver/trip/start`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bus_id: busId,
+                        route_number: routeNumber,
+                        start_location: startLocation
+                    })
+                });
+                
+                if (response && response.ok) {
+                    tripActive = true;
+                    tripStartTime = new Date();
+                    startTripBtn.disabled = true;
+                    endTripBtn.disabled = false;
+                    
+                    // Start trip timer
+                    startTripTimer();
+                    
+                    // Start GPS tracking automatically
+                    if (!isTracking) {
+                        toggleTracking();
+                    }
+                    
+                    showNotification('Trip started successfully!', 'success');
+                } else {
+                    throw new Error('Failed to start trip');
+                }
+            } catch (error) {
+                console.error('Start trip error:', error);
+                showNotification('Failed to start trip', 'error');
+            }
+        }
+
+        // End trip
+        async function endTrip() {
+            const busId = document.getElementById('busId').value.trim();
+            const endLocation = prompt('Enter end location:') || 'Unknown';
+            const totalPassengers = parseInt(document.getElementById('passengerCount').textContent) || 0;
+            
+            try {
+                const response = await makeAuthenticatedRequest(`${API_BASE_URL}/driver/trip/end`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bus_id: busId,
+                        end_location: endLocation,
+                        total_passengers: totalPassengers
+                    })
+                });
+                
+                if (response && response.ok) {
+                    tripActive = false;
+                    startTripBtn.disabled = false;
+                    endTripBtn.disabled = true;
+                    
+                    // Stop trip timer
+                    stopTripTimer();
+                    
+                    // Stop GPS tracking
+                    if (isTracking) {
+                        toggleTracking();
+                    }
+                    
+                    // Reset stats
+                    resetStats();
+                    
+                    showNotification('Trip ended successfully!', 'success');
+                } else {
+                    throw new Error('Failed to end trip');
+                }
+            } catch (error) {
+                console.error('End trip error:', error);
+                showNotification('Failed to end trip', 'error');
+            }
+        }
+
+        // Toggle GPS tracking
+        function toggleTracking() {
+            if (isTracking) {
+                stopTracking();
+            } else {
+                startTracking();
+            }
+        }
+
+        // Start GPS tracking
+        function startTracking() {
+            if (!navigator.geolocation) {
+                showNotification('Geolocation is not supported by this browser', 'error');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+            
+            watchId = navigator.geolocation.watchPosition(
+                updateLocation,
+                handleLocationError,
+                options
+            );
+            
+            isTracking = true;
+            updateStatus();
+            trackingBtn.innerHTML = '<i class="fas fa-satellite-dish"></i> Stop GPS Tracking';
+            
+            // Start sending location updates every 10 seconds
+            locationUpdateInterval = setInterval(sendLocationUpdate, 10000);
+            
+            showNotification('GPS tracking started', 'success');
+        }
+
+        // Stop GPS tracking
+        function stopTracking() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            if (locationUpdateInterval) {
+                clearInterval(locationUpdateInterval);
+                locationUpdateInterval = null;
+            }
+            
+            isTracking = false;
+            updateStatus();
+            trackingBtn.innerHTML = '<i class="fas fa-satellite-dish"></i> Start GPS Tracking';
+            
+            showNotification('GPS tracking stopped', 'warning');
+        }
+
+        // Update location
+        function updateLocation(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const speed = position.coords.speed || 0;
+            const heading = position.coords.heading || 0;
+            
+            // Update UI
+            document.getElementById('currentLat').textContent = lat.toFixed(6);
+            document.getElementById('currentLng').textContent = lng.toFixed(6);
+            document.getElementById('currentDirection').textContent = getDirection(heading);
+            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+            document.getElementById('currentSpeed').textContent = Math.round(speed * 3.6); // Convert m/s to km/h
+            
+            // Update map
+            if (map && busMarker) {
+                busMarker.setLatLng([lat, lng]);
+                map.panTo([lat, lng]);
+            }
+            
+            // Calculate distance if we have a previous position
+            if (lastPosition && tripActive) {
+                const distance = calculateDistance(
+                    lastPosition.lat, lastPosition.lng,
+                    lat, lng
+                );
+                totalDistance += distance;
+                document.getElementById('totalDistance').textContent = totalDistance.toFixed(1);
+            }
+            
+            lastPosition = { lat, lng };
+        }
+
+        // Handle location error
+        function handleLocationError(error) {
+            let message = 'Location error: ';
+            switch (error.code) {
+                case error.PERMISSION_DENIED:
+                    message += 'Permission denied';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message += 'Position unavailable';
+                    break;
+                case error.TIMEOUT:
+                    message += 'Timeout';
+                    break;
+                default:
+                    message += 'Unknown error';
+            }
+            showNotification(message, 'error');
+        }
+
+        // Send location update to server
+        async function sendLocationUpdate() {
+            if (!isTracking || !lastPosition) return;
+            
+            const busId = document.getElementById('busId').value.trim();
+            if (!busId) return;
+            
+            try {
+                const speed = parseFloat(document.getElementById('currentSpeed').textContent) || 0;
+                const direction = document.getElementById('currentDirection').textContent;
+                
+                await makeAuthenticatedRequest(`${API_BASE_URL}/driver/location/update`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bus_id: busId,
+                        latitude: lastPosition.lat,
+                        longitude: lastPosition.lng,
+                        speed: speed,
+                        direction: direction,
+                        passenger_load: currentPassengerLoad
+                    })
+                });
+            } catch (error) {
+                console.error('Location update error:', error);
+            }
+        }
+
+        // Select passenger load
+        function selectPassengerLoad(load) {
+            currentPassengerLoad = load;
+            
+            // Update UI
+            document.querySelectorAll('.load-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            
+            document.querySelector(`[data-load="${load}"]`).classList.add('selected');
+        }
+
+        // Update passenger load
+        async function updatePassengerLoad() {
+            const busId = document.getElementById('busId').value.trim();
+            if (!busId) {
+                showNotification('Please enter Bus ID first', 'error');
+                return;
+            }
+            
+            showNotification(`Passenger load updated to: ${currentPassengerLoad}`, 'success');
+        }
+
+        // Send SOS alert
+        async function sendSOS(alertType) {
+            const busId = document.getElementById('busId').value.trim();
+            const location = `${document.getElementById('currentLat').textContent}, ${document.getElementById('currentLng').textContent}`;
+            
+            const description = prompt(`Describe the ${alertType}:`);
+            
+            try {
+                const response = await makeAuthenticatedRequest(`${API_BASE_URL}/driver/sos`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        bus_id: busId || 'UNKNOWN',
+                        alert_type: alertType,
+                        location: location,
+                        description: description
+                    })
+                });
+                
+                if (response && response.ok) {
+                    const result = await response.json();
+                    showNotification(`SOS alert sent! Alert ID: ${result.alert_id}`, 'success');
+                } else {
+                    throw new Error('Failed to send SOS alert');
+                }
+            } catch (error) {
+                console.error('SOS error:', error);
+                showNotification('Failed to send SOS alert', 'error');
+            }
+        }
+
+        // Start trip timer
+        function startTripTimer() {
+            tripInterval = setInterval(() => {
+                if (tripStartTime) {
+                    const elapsed = new Date() - tripStartTime;
+                    const hours = Math.floor(elapsed / (1000 * 60 * 60));
+                    const minutes = Math.floor((elapsed % (1000 * 60 * 60)) / (1000 * 60));
+                    document.getElementById('tripTime').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        // Stop trip timer
+        function stopTripTimer() {
+            if (tripInterval) {
+                clearInterval(tripInterval);
+                tripInterval = null;
+            }
+        }
+
+        // Reset statistics
+        function resetStats() {
+            document.getElementById('currentSpeed').textContent = '0';
+            document.getElementById('totalDistance').textContent = '0.0';
+            document.getElementById('tripTime').textContent = '00:00';
+            totalDistance = 0;
+            lastPosition = null;
+        }
+
+        // Update status
+        function updateStatus() {
+            if (isTracking) {
+                statusDot.classList.remove('offline');
+                statusText.textContent = 'Online';
+            } else {
+                statusDot.classList.add('offline');
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+
+        // Get direction from heading
+        function getDirection(heading) {
+            if (heading === null || heading === undefined) return 'Unknown';
+            
+            const directions = [
+                'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'
+            ];
+            
+            const index = Math.round(heading / 22.5) % 16;
+            return directions[index];
+        }
+
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLng / 2) * Math.sin(dLng / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        }
+
+        // Authentication helper
+        async function makeAuthenticatedRequest(url, options = {}) {
+            const token = localStorage.getItem('access_token');
+            
+            const response = await fetch(url, {
+                ...options,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    ...options.headers
+                }
+            });
+            
+            if (response.status === 401) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+                return null;
+            }
+            
+            return response;
+        }
+
+        // Logout function
+        function logout() {
+            // Stop tracking if active
+            if (isTracking) {
+                stopTracking();
+            }
+            
+            // End trip if active
+            if (tripActive) {
+                // Force end trip without server call for logout
+                stopTripTimer();
+            }
+            
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Simulate passenger updates (for demo)
+        setInterval(() => {
+            if (tripActive) {
+                const currentCount = parseInt(document.getElementById('passengerCount').textContent);
+                const change = Math.random() > 0.5 ? 1 : -1;
+                const newCount = Math.max(0, currentCount + change);
+                document.getElementById('passengerCount').textContent = newCount;
+            }
+        }, 30000); // Update every 30 seconds
+    </script>
+</body>
+</html>
