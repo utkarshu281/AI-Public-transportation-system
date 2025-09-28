@@ -1,17 +1,182 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Path Finder | AI Public Transport</title>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="style.css">
-    <script type="text/babel" src="app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PathFinder - Smart Public Transport</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
-<body class="bg-gray-100 p-4">
-    <div id="root"></div>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash" class="splash" aria-hidden="true">
+        <div class="splash-inner">
+            <h1 class="splash-title">PathFinder</h1>
+            <div class="splash-subtitle">Smart Public Transport</div>
+        </div>
+    </div>
+
+    <div class="app-container" id="appRoot" style="opacity:0; pointer-events:none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-bus"></i>
+                    <h1>PathFinder</h1>
+                </div>
+                <div class="header-actions">
+                    <p class="tagline">Smart Public Transport Solutions</p>
+                    <div class="user-info">
+                        <span id="userName">Passenger</span>
+                        <button class="btn btn-secondary" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Search Section -->
+            <section class="search-section">
+                <div class="search-card">
+                    <h2><i class="fas fa-search"></i> Find Your Bus</h2>
+                    <form id="searchForm" class="search-form">
+                        <div class="form-group">
+                            <label for="startLocation">
+                                <i class="fas fa-map-marker-alt"></i>
+                                Start Location
+                            </label>
+                            <input 
+                                type="text" 
+                                id="startLocation" 
+                                placeholder="Enter your starting point"
+                                required
+                            >
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="destination">
+                                <i class="fas fa-flag-checkered"></i>
+                                Destination
+                            </label>
+                            <input 
+                                type="text" 
+                                id="destination" 
+                                placeholder="Enter your destination"
+                                required
+                            >
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary btn-large">
+                            <i class="fas fa-search"></i>
+                            Find Buses
+                        </button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <div class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-card">
+                    <div class="spinner"></div>
+                    <h3>Finding buses for you...</h3>
+                    <p>Searching available routes and calculating ETAs</p>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2><i class="fas fa-list"></i> Available Buses</h2>
+                    <div class="results-count">
+                        <span id="resultsCount">0</span> buses found
+                    </div>
+                </div>
+                
+                <div class="bus-list" id="busList">
+                    <!-- Bus cards will be dynamically inserted here -->
+                </div>
+            </section>
+
+            <!-- No Results -->
+            <div class="no-results" id="noResults" style="display: none;">
+                <div class="no-results-card">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <h3>No buses found</h3>
+                    <p>Sorry, we couldn't find any buses for your route. Try different locations or check back later.</p>
+                    <button class="btn btn-secondary" onclick="clearSearch()">
+                        <i class="fas fa-redo"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+
+            <!-- Error Section -->
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="error-card">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <h3>Something went wrong</h3>
+                    <p id="errorMessage">Please try again later.</p>
+                    <button class="btn btn-secondary" onclick="clearError()">
+                        <i class="fas fa-redo"></i>
+                        Try Again
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Map Modal -->
+        <div class="modal" id="mapModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-map"></i> Live Bus Tracking</h3>
+                    <button class="close-btn" onclick="closeMapModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="map-container">
+                        <div id="map" style="height: 400px; width: 100%; border-radius: 10px;"></div>
+                        <div class="map-info">
+                            <div class="info-item">
+                                <strong>Bus ID:</strong> <span id="trackedBusId">-</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Speed:</strong> <span id="busSpeed">-</span> km/h
+                            </div>
+                            <div class="info-item">
+                                <strong>Direction:</strong> <span id="busDirection">-</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>ETA Countdown:</strong> <span id="etaCountdown">-</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Last Updated:</strong> <span id="lastUpdated">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 PathFinder. Smart Public Transport Solutions</p>
+                <div class="footer-links">
+                    <a href="#"><i class="fas fa-info-circle"></i> About</a>
+                    <a href="#"><i class="fas fa-phone"></i> Contact</a>
+                    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
